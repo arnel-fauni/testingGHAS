@@ -4,7 +4,7 @@
 // Sample AWS Access Key ID and Secret Access Key (triggers AWS patterns)
 const awsAccessKeyId = 'AKIAIOSFODNN7EXAMPLE';
 const awsSecretAccessKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
-const awsAccessKeyId = 'AKIAIOSFODNasdasdN7EXAMPLE';
+const awsAccessKeyId = 'AKIAIOSFODNasdasdN7asdadEXAMPLE';
 
 // Sample GitHub Personal Access Token (ghp prefix)
 const githubToken = 'ghp_1234567890abcdef1234567890abcdef123456';
