@@ -7,7 +7,7 @@ const awsSecretAccessKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
 const awsAccessKeyId = 'AKIAIOSFODNasdasdN7EXAMPLE';
 
 // Sample GitHub Personal Access Token (ghp prefix)
-const githubToken = 'ghp_1234567890abcdef1234567890abcdef123456';
+const githubToken = 'ghp_1234567890abcdef12345asdasdasd67890abcdef123456';
 
 // Sample generic API token (Base64-like)
 const apiToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
