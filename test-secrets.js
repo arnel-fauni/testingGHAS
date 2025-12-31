@@ -1,26 +1,12 @@
-// test-secrets.js - GHAS Secret Scanning Test File
-// Commit this to verify custom/predefined pattern detection
+// GitHub Personal Access Token (ghp_ pattern)
+const GITHUB_TOKEN = 'ghp_1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t';
 
-// Sample AWS Access Key ID and Secret Access Key (triggers AWS patterns)
-const awsAccessKeyId = 'AKIAIOSFODNN7EXAMPLE';
-const awsSecretAccessKey = 'wJalrXUtnFEMI/K7MDENwerwerG/bPxRfiCYEXAMPLEKEY';
-const awsAccessKeyId = 'AKIAIOSFODNasdasdN7EXAMPLE';
+// AWS Access Key (AKIA pattern)
+const AWS_ACCESS_KEY = 'AKIAIOSFODNN7EXAMPLE';
+const AWS_SECRET_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
 
-// Sample GitHub Personal Access Token (ghp prefix)
-const githubToken = 'ghp_1234567890abcdef1234567890abcdef123456';
+// Stripe Secret Key
+const STRIPE_SECRET = 'sk_live_51ABC123XYZ789def456ghi789jkl012mno';
 
-// Sample generic API token (Base64-like)
-const apiToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-
-// Sample weak passwords in config object
-const config = {
-  databasePassword: 'password123',
-  adminPassword: 'letmein',
-  secretKey: 'qwertyuiop'
-};
-
-// Sample JWT token
-const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmQiOiJhZG1pbiIsImlhdCI6MTUxNjIzOTAyMn0.example_jwt_signature_here';
-
-// Console log for testing (remove before production)
-console.log('Test secrets loaded:', { awsAccessKeyId, githubToken });
+// GitLab Token
+const GITLAB_TOKEN = 'glpat-1234567890abcdef';
