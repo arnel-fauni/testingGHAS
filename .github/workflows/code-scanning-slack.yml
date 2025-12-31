@@ -17,15 +17,17 @@ jobs:
       
       - name: Get alerts via GH CLI
         id: alerts
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p alerts
           gh api \
             /repos/${{ github.repository }}/code-scanning/alerts?state=open \
-            > alerts/raw.json
+            > alerts/raw.json || echo "No alerts or API error" > alerts/raw.json
           
-          ALERT_COUNT=$(jq '.alerts | length' alerts/raw.json)
-          if [ "$ALERT_COUNT" -gt 0 ]; then
-            ALERTS=$(jq -r '.alerts[] | "- **\(.rule.severity | ascii_upcase)** \(.rule.rule_id)\n  📄 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n  💡 \(.rule.description)\n  🔗 \(.html_url)"' alerts/raw.json)
+          ALERT_COUNT=$(jq '.alerts | length // empty' alerts/raw.json)
+          if [ "$ALERT_COUNT" != "0" ] && [ "$ALERT_COUNT" != "" ]; then
+            ALERTS=$(jq -r '.alerts[] | "- **\(.rule.severity | ascii_upcase)** \(.rule.rule_id)\n  📄 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n  💡 \(.rule.description // \"No description\")\n  🔗 \(.html_url)"' alerts/raw.json)
             echo "alerts<<EOF" >> $GITHUB_OUTPUT
             echo "$ALERTS" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
