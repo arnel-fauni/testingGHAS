@@ -1,29 +1,32 @@
-name: Code Scanning to Slack
-on:
-  schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
 
-jobs:
+# name: Code Scanning to Slack
+# on:
+#   schedule:
+#     - cron: '*/15 * * * *'
+#   workflow_dispatch:
+
+# jobs:
   notify:
-    runs-on: ubuntu-latest
+#     runs-on: ubuntu-latest
     steps:
-      - name: Send Vulnerability Details
+#       - name: Send Vulnerability Details
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+#           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+#           RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=open")
-          
+ #          
           ALERT_COUNT=$(echo "$RESPONSE" | grep -c '"state":"open"')
           
-          if [ "$ALERT_COUNT" -gt 0 ]; then
-            echo "Found $ALERT_COUNT alerts"
-            curl -X POST -H 'Content-type: application/json' \
-              --data "{\"text\":\"🚨 **$ALERT_COUNT ADVANCED SECURITY ALERTS** in ${{ github.repository }}\n🔍 https://github.com/${{ github.repository }}/security/code-scanning\"}" \
-              "$SLACK_WEBHOOK_URL"
-          else
-            echo "No open alerts"
-          fi
+ #          if [ "$ALERT_COUNT" -gt 0 ]; then
+#             echo "Found $ALERT_COUNT alerts"
+#             curl -X POST -H 'Content-type: application/json' \
+#               --data "{\"text\":\"🚨 **$ALERT_COUNT ADVANCED SECURITY ALERTS** in ${{ github.repository }}\n🔍 https://github.com/${{ github.repository }}/security/code-scanning\"}" \
+#               "$SLACK_WEBHOOK_URL"
+#           else
+#             echo "No open alerts"
+#           fi 
+
+          
