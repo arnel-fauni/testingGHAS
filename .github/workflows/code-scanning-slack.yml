@@ -15,29 +15,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Fetch & format alerts
+      - name: Get alerts via GH CLI
         id: alerts
         run: |
-          ALERTS=$(gh api \
+          mkdir -p alerts
+          gh api \
             /repos/${{ github.repository }}/code-scanning/alerts?state=open \
-            --jq '.alerts[] | "- **🚨 ' + .rule.severity + '** ' + .rule.rule_id + '\n  📄 *' + (.most_recent_instance.location.path // "N/A") + ":" + ((.most_recent_instance.location.start_line|tostring) // "N/A") + '*\n  💡 ' + (.rule.description // "No description") + '\n  🔗 <' + .html_url + '|View Alert>"' \
-            | tr -d '"' | paste -sd '\n' -)
+            > alerts/raw.json
           
-          echo "alerts<<EOF" >> $GITHUB_OUTPUT
-          echo "$ALERTS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          ALERT_COUNT=$(jq '.alerts | length' alerts/raw.json)
+          if [ "$ALERT_COUNT" -gt 0 ]; then
+            ALERTS=$(jq -r '.alerts[] | "- **\(.rule.severity | ascii_upcase)** \(.rule.rule_id)\n  📄 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n  💡 \(.rule.description)\n  🔗 \(.html_url)"' alerts/raw.json)
+            echo "alerts<<EOF" >> $GITHUB_OUTPUT
+            echo "$ALERTS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "count=$ALERT_COUNT" >> $GITHUB_OUTPUT
+          fi
       
-      - name: Send detailed alerts to Slack
-        if: steps.alerts.outputs.alerts != ''
+      - name: Send to Slack
+        if: steps.alerts.outputs.count != ''
         uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
           channel-id: 'C018YG5J7TP'
           slack-message: |
-            :rotating_light: **NEW GITHUB ADVANCED SECURITY ALERTS** :rotating_light:
-            *Repository:* ${{ github.repository }}
+            🚨 **${{ steps.alerts.outputs.count }} NEW ADVANCED SECURITY ALERTS** 🚨
+            *Repo:* ${{ github.repository }}
             
             ${{ steps.alerts.outputs.alerts }}
             
-            :mag: *Check all alerts:* https://github.com/${{ github.repository }}/security/code-scanning
+            🔍 Full list: https://github.com/${{ github.repository }}/security/code-scanning
