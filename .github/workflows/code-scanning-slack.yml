@@ -1,0 +1,26 @@
+name: Code Scanning Alerts to Slack
+
+on:
+  code_scanning_alert:
+    types: [created, updated, reopened, closed]
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          channel-id: 'your-channel-id'  # Replace with your Slack channel
+          slack-message: |
+            🚨 *Code Scanning Alert* 🚨
+            **Repo:** ${{ github.repository }}
+            **Alert:** ${{ github.event.alert.rule.rule_id }}
+            **Severity:** ${{ github.event.alert.rule.severity }}
+            **File:** ${{ github.event.alert.most_recent_instance.location.path }}
+            **Line:** ${{ github.event.alert.most_recent_instance.location.start_line }}
+            **Branch:** ${{ github.event.alert.most_recent_instance.ref }}
+            **Status:** ${{ github.event.alert.state }}
+            📝 <${{ github.event.alert.html_url }}|View Alert>
