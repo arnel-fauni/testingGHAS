@@ -1,5 +1,4 @@
 name: Code Scanning Alerts to Slack
-
 on:
   schedule:
     - cron: '*/15 * * * *'
@@ -9,19 +8,13 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Real Vulnerability Details
+      - name: Send Real Vulnerabilities
         env:
           GH_TOKEN: ${{ github.token }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts?state=open \
-            --jq '.alerts[] | "*🚨 \(.rule.severity|upcase) - \(.rule.rule_id)*\n📁 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n💡 \(.rule.description)\n🔗 \(.html_url)\n" | join("\n\n")')
+            --jq '.alerts[] | "*🚨 \(.rule.severity|upcase) - \(.rule.rule_id)*\n📁 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n💡 \(.rule.description)\n🔗 \(.html_url)\n" | join("\n\n")' 2>/dev/null || echo "")
           
-          if [ "$ALERTS" != "null" ] && [ -n "$ALERTS" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data "{
-                \"text\": \":rotating_light: **GITHUB ADVANCED SECURITY ALERTS** :rotating_light:\n*Repo:* ${{ github.repository }}\n\n$ALERTS\"
-              }" $SLACK_WEBHOOK_URL
-          else
-            echo "No open alerts found"
-          fi
+          [ -n "$ALERTS" ] && curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\":rotating_light: **GITHUB ADVANCED SECURITY ALERTS** :rotating_light:\n*Repo:* ${{ github.repository }}\n\n$ALERTS\"}" "$SLACK_WEBHOOK_URL"
