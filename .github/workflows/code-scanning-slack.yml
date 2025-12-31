@@ -1,20 +1,33 @@
-name: Code Scanning Alerts to Slack
+name: Code Scanning Debug
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
-  notify:
+  debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Real Vulnerabilities
+      - name: DEBUG - Show ALL Data
         env:
           GH_TOKEN: ${{ github.token }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts?state=open \
-            --jq '.alerts[] | "*🚨 \(.rule.severity|upcase) - \(.rule.rule_id)*\n📁 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n💡 \(.rule.description)\n🔗 \(.html_url)\n" | join("\n\n")' 2>/dev/null || echo "")
+          echo "🔍 DEBUGGING..."
           
-          [ -n "$ALERTS" ] && curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\":rotating_light: **GITHUB ADVANCED SECURITY ALERTS** :rotating_light:\n*Repo:* ${{ github.repository }}\n\n$ALERTS\"}" "$SLACK_WEBHOOK_URL"
+          # 1. RAW API response
+          RAW=$(gh api /repos/${{ github.repository }}/code-scanning/alerts?state=open 2>/dev/null || echo "NO_ALERTS")
+          echo "RAW API: $RAW" | head -c 500
+          
+          # 2. Count alerts
+          COUNT=$(echo "$RAW" | jq '.alerts | length // 0')
+          echo "ALERT COUNT: $COUNT"
+          
+          # 3. ALWAYS send to Slack (debug info)
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"text\": \"🔍 *DEBUG: ${{ github.repository }}*\n
+              *Raw API length:* $(echo $RAW | wc -c)\n
+              *Alert count:* $COUNT\n
+              *First 200 chars:* $(echo \"$RAW\" | head -c 200)\"
+            }" "$SLACK_WEBHOOK_URL"
