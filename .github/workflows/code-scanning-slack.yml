@@ -2,37 +2,42 @@ name: Code Scanning Alerts to Slack
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Check every 15 minutes
-  workflow_dispatch:  # Manual trigger option
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 permissions:
   security-events: write
+  contents: read
 
 jobs:
-  check-alerts:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: List recent code scanning alerts
+      - name: Fetch & format alerts
         id: alerts
         run: |
           ALERTS=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/code-scanning/alerts \
-            --jq '[.alerts[] | select(.state == "open") | {id: .id, rule: .rule.rule_id, severity: .rule.severity, file: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, url: .html_url}] | length')
-          echo "alert_count=$ALERTS" >> $GITHUB_OUTPUT
+            /repos/${{ github.repository }}/code-scanning/alerts?state=open \
+            --jq '.alerts[] | "- **🚨 ' + .rule.severity + '** ' + .rule.rule_id + '\n  📄 *' + (.most_recent_instance.location.path // "N/A") + ":" + ((.most_recent_instance.location.start_line|tostring) // "N/A") + '*\n  💡 ' + (.rule.description // "No description") + '\n  🔗 <' + .html_url + '|View Alert>"' \
+            | tr -d '"' | paste -sd '\n' -)
+          
+          echo "alerts<<EOF" >> $GITHUB_OUTPUT
+          echo "$ALERTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       
-      - name: Send Slack notification if new alerts
-        if: steps.alerts.outputs.alert_count > 0
+      - name: Send detailed alerts to Slack
+        if: steps.alerts.outputs.alerts != ''
         uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          channel-id: 'C018YG5J7TP'  # Your channel ID
+          channel-id: 'C018YG5J7TP'
           slack-message: |
-            🚨 *New Code Scanning Alerts* 🚨
-            **Repo:** ${{ github.repository }}
-            **Count:** ${{ steps.alerts.outputs.alert_count }}
-            **Check Security tab:** ${{ github.repository }}/security/code-scanning
+            :rotating_light: **NEW GITHUB ADVANCED SECURITY ALERTS** :rotating_light:
+            *Repository:* ${{ github.repository }}
+            
+            ${{ steps.alerts.outputs.alerts }}
+            
+            :mag: *Check all alerts:* https://github.com/${{ github.repository }}/security/code-scanning
