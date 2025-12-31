@@ -1,26 +1,38 @@
 name: Code Scanning Alerts to Slack
 
 on:
-  code_scanning_alert:
-    types: [created, updated, reopened, closed]
+  schedule:
+    - cron: '*/15 * * * *'  # Check every 15 minutes
+  workflow_dispatch:  # Manual trigger option
+
+permissions:
+  security-events: write
 
 jobs:
-  notify-slack:
+  check-alerts:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Slack Notification
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      
+      - name: List recent code scanning alerts
+        id: alerts
+        run: |
+          ALERTS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/code-scanning/alerts \
+            --jq '[.alerts[] | select(.state == "open") | {id: .id, rule: .rule.rule_id, severity: .rule.severity, file: .most_recent_instance.location.path, line: .most_recent_instance.location.start_line, url: .html_url}] | length')
+          echo "alert_count=$ALERTS" >> $GITHUB_OUTPUT
+      
+      - name: Send Slack notification if new alerts
+        if: steps.alerts.outputs.alert_count > 0
         uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          channel-id: 'C0123456789'  # Replace with your Slack channel
+          channel-id: 'C018YG5J7TP'  # Your channel ID
           slack-message: |
-            🚨 *Code Scanning Alert* 🚨
+            🚨 *New Code Scanning Alerts* 🚨
             **Repo:** ${{ github.repository }}
-            **Alert:** ${{ github.event.alert.rule.rule_id }}
-            **Severity:** ${{ github.event.alert.rule.severity }}
-            **File:** ${{ github.event.alert.most_recent_instance.location.path }}
-            **Line:** ${{ github.event.alert.most_recent_instance.location.start_line }}
-            **Branch:** ${{ github.event.alert.most_recent_instance.ref }}
-            **Status:** ${{ github.event.alert.state }}
-            📝 <${{ github.event.alert.html_url }}|View Alert>
+            **Count:** ${{ steps.alerts.outputs.alert_count }}
+            **Check Security tab:** ${{ github.repository }}/security/code-scanning
