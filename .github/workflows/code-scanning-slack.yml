@@ -5,46 +5,23 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
-permissions:
-  security-events: write
-  contents: read
-
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Get alerts via GH CLI
-        id: alerts
+      - name: Send Real Vulnerability Details
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p alerts
-          gh api \
-            /repos/${{ github.repository }}/code-scanning/alerts?state=open \
-            > alerts/raw.json || echo "No alerts or API error" > alerts/raw.json
-          
-          ALERT_COUNT=$(jq '.alerts | length // empty' alerts/raw.json)
-          if [ "$ALERT_COUNT" != "0" ] && [ "$ALERT_COUNT" != "" ]; then
-            ALERTS=$(jq -r '.alerts[] | "- **\(.rule.severity | ascii_upcase)** \(.rule.rule_id)\n  📄 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n  💡 \(.rule.description // \"No description\")\n  🔗 \(.html_url)"' alerts/raw.json)
-            echo "alerts<<EOF" >> $GITHUB_OUTPUT
-            echo "$ALERTS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "count=$ALERT_COUNT" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Send to Slack
-        if: steps.alerts.outputs.count != ''
-        uses: slackapi/slack-github-action@v1.26.0
-        env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        with:
-          channel-id: 'C018YG5J7TP'
-          slack-message: |
-            🚨 **${{ steps.alerts.outputs.count }} NEW ADVANCED SECURITY ALERTS** 🚨
-            *Repo:* ${{ github.repository }}
-            
-            ${{ steps.alerts.outputs.alerts }}
-            
-            🔍 Full list: https://github.com/${{ github.repository }}/security/code-scanning
+        run: |
+          ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts?state=open \
+            --jq '.alerts[] | "*🚨 \(.rule.severity|upcase) - \(.rule.rule_id)*\n📁 \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)\n💡 \(.rule.description)\n🔗 \(.html_url)\n" | join("\n\n")')
+          
+          if [ "$ALERTS" != "null" ] && [ -n "$ALERTS" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{
+                \"text\": \":rotating_light: **GITHUB ADVANCED SECURITY ALERTS** :rotating_light:\n*Repo:* ${{ github.repository }}\n\n$ALERTS\"
+              }" $SLACK_WEBHOOK_URL
+          else
+            echo "No open alerts found"
+          fi
